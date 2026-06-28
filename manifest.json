@@ -1,0 +1,25 @@
+{
+  "name": "Clock Planner",
+  "short_name": "ClockPlanner",
+  "start_url": "./My%20Daily_planner%20Noti.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f0f13",
+  "theme_color": "#7f2515",
+  "description": "แอปจัดตารางงานและแจ้งเตือนแบบมือถือ",
+  "icons": [
+    {
+      "src": "./icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

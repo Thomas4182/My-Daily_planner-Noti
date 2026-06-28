@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#7f2515">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Clock Planner</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f13;
+  --surface:#1a1a22;
+  --surface2:#22222e;
+  --border:#2e2e3e;
+  --text:#e8e8f0;
+  --text2:#888899;
+  --accent:#7f2515;
+  --accent2:#5a52c8;
+  --red:#e05c6e;
+}
+:root.light{
+  --bg:#f4f4f8;
+  --surface:#ffffff;
+  --surface2:#ebebf2;
+  --border:#d0d0e0;
+  --text:#1a1a2e;
+  --text2:#666680;
+  --accent:#7f2515;
+  --accent2:#5a52c8;
+  --red:#e05c6e;
+}
+body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;min-height:100vh;padding:1.5rem 1rem}
+h1{font-size:1.1rem;font-weight:500;color:var(--text2);text-align:center;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1.5rem}
+.wrap{max-width:480px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:1.25rem}
+.help-wrap{position:relative;display:flex;align-items:center;gap:8px}
+.help-btn{width:26px;height:26px;border:none;border-radius:50%;background:var(--surface2);color:var(--text2);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
+.help-box{position:absolute;top:34px;right:0;width:240px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:12px;line-height:1.5;color:var(--text2);display:none;z-index:10}
+.help-box.show{display:block}
+.tabs{display:flex;width:100%;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.tab{flex:1;height:36px;font-size:13px;font-family:'Sarabun',sans-serif;font-weight:500;border:none;cursor:pointer;background:var(--surface);color:var(--text2);transition:all .2s}
+.tab.active{background:var(--accent);color:#fff}
+.clock-container{position:relative;width:300px;height:300px;cursor:crosshair}
+canvas{position:absolute;top:0;left:0}
+.hint{font-size:11px;color:var(--text2);text-align:center}
+.panel{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem}
+.panel-title{font-size:12px;font-weight:600;color:var(--text2);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px}
+.add-form{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:8px;align-items:center}
+input[type=text],select{flex:1;height:36px;padding:0 10px;font-size:13px;font-family:'Sarabun',sans-serif;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);outline:none}
+input[type=text]:focus,select:focus{border-color:var(--accent)}
+select option{background:var(--surface2)}
+.sep{font-size:13px;color:var(--text2)}
+.btn{height:36px;padding:0 16px;font-size:13px;font-family:'Sarabun',sans-serif;font-weight:500;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-primary{background:var(--accent);color:#fff;border-color:transparent}
+.btn-primary:hover{background:var(--accent2);color:#fff}
+.task-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;padding-right:4px}
+.task-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);touch-action:pan-y}
+.task-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.task-info{flex:1;min-width:0}
+.task-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-time{font-size:11px;color:var(--text2)}
+.task-del{background:none;border:none;cursor:pointer;color:var(--text2);font-size:18px;padding:0 2px;line-height:1;transition:color .15s}
+.task-del:hover{color:var(--red)}
+.empty{font-size:13px;color:var(--text2);text-align:center;padding:1rem 0}
+input[type=color]{height:36px;padding:2px 3px;width:44px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%">
+    <div class="help-wrap">
+      <h1 style="margin:0">Clock Planner</h1>
+    </div>
+    <button id="themeBtn" onclick="toggleTheme()" style="background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;font-family:'Sarabun',sans-serif;color:var(--text2);cursor:pointer;transition:all .2s">🌙 มืด</button>
+    <button class="help-btn" onclick="toggleHelp()" aria-label="ช่วยเหลือ">❓</button>
+      <div id="helpBox" class="help-box">
+        ใช้เว็บนี้เพื่อวางแผนเวลาได้ง่าย ๆ เป็นรูปแบบนาฬิกา 24 ชั่วโมง<br>
+        เวลาที่แสดงจะอิงตามเวลาของเครื่องคุณ<br>
+        <br>
+        (วิธีการใช้งาน)<br>
+        • ใส่ชื่อ task และเลือกเวลาเริ่ม–จบ<br>
+        • เลือกสีและเพิ่ม task <br>
+        • สามารถบันทึกเป็นแบบชุดเวลาที่คุณเคยลงไว้ได้และโหลดกลับมาได้<br>
+        • ใช้ปุ่มสลับโหมด AM/PM เพื่อดู task ในช่วงเวลาเช้าและบ่าย<br>
+        • สามารถลาก task ในรายการเพื่อจัดลำดับใหม่ได้<br>
+      </div>
+  </div>
+  <p id="currentDate" class="current-date"></p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="setMode('am')">AM · 00:00–11:59</button>
+    <button class="tab" onclick="setMode('pm')">PM · 12:00–23:59</button>
+  </div>
+
+  <div class="clock-container">
+    <canvas id="bgCanvas" width="300" height="300"></canvas>
+    <canvas id="taskCanvas" width="300" height="300"></canvas>
+    <canvas id="handCanvas" width="300" height="300"></canvas>
+  </div>
+
+  <div class="panel">
+    <p class="panel-title">เพิ่ม task</p>
+    <div class="add-form">
+      <input type="text" id="taskName" placeholder="ชื่อ task..." />
+      <div class="row">
+        <select id="startH"></select>
+        <span class="sep">—</span>
+        <select id="endH"></select>
+      </div>
+      <div class="row">
+        <input type="color" id="taskColor" value="#f59e0b">
+        <button class="btn btn-primary" onclick="addTask()" style="flex:1">+ เพิ่ม</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <p class="panel-title">รายการทั้งหมด</p>
+    <div class="task-list" id="taskList"><p class="empty">ยังไม่มี task</p></div>
+  </div>
+
+  <div class="panel">
+    <p class="panel-title">บันทึก Preset</p>
+    <div class="add-form">
+      <input type="text" id="presetName" placeholder="ชื่อเซฟ..." />
+      <div class="row">
+        <select id="presetSelect"></select>
+      </div>
+      <div class="row">
+        <button class="btn btn-primary" onclick="savePreset()" style="flex:1">บันทึกเซฟ</button>
+        <button class="btn" onclick="loadPreset()" style="flex:1">โหลดเซฟ</button>
+        <button class="btn" onclick="deletePreset()" style="flex:1">ลบเซฟ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <p class="panel-title">แจ้งเตือนมือถือ</p>
+    <div class="add-form">
+      <div class="row">
+        <button class="btn btn-primary" onclick="requestNotificationPermission()" style="flex:1">อนุญาตการแจ้งเตือน</button>
+      </div>
+      <div class="row">
+        <button class="btn" onclick="testNotification()" style="flex:1">ทดสอบแจ้งเตือน</button>
+      </div>
+      <div class="row">
+        <span id="reminderStatus" style="font-size:12px;color:var(--text2)">กำลังรออนุญาต...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let mode='am', tasks=[], dragStart=null;
+const cx=150,cy=150,r=138,inner=76;
+let reminderTimer = null;
+let lastReminderKey = '';
+
+function updateReminderStatus(message){
+  const el=document.getElementById('reminderStatus');
+  if(el) el.textContent=message;
+}
+
+function requestNotificationPermission(){
+  if(!('Notification' in window)){
+    updateReminderStatus('เบราว์เซอร์นี้ไม่รองรับ notification');
+    return;
+  }
+  Notification.requestPermission().then((permission)=>{
+    if(permission==='granted'){
+      updateReminderStatus('อนุญาตการแจ้งเตือนแล้ว');
+      showLocalNotification('Clock Planner','ระบบแจ้งเตือนพร้อมใช้งานแล้ว');
+    } else {
+      updateReminderStatus('ยังไม่ได้อนุญาตการแจ้งเตือน');
+    }
+  });
+}
+
+function showLocalNotification(title, body){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  try{
+    new Notification(title,{body,icon:'./icon-192.svg'});
+  } catch(e){console.error(e);}
+}
+
+function testNotification(){
+  showLocalNotification('Clock Planner','นี่คือการทดสอบแจ้งเตือน');
+  updateReminderStatus('ส่งการทดสอบแจ้งเตือนแล้ว');
+}
+
+function registerServiceWorker(){
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./service-worker.js').then(()=>{
+      updateReminderStatus('PWA พร้อมใช้งาน');
+    }).catch(()=>{
+      updateReminderStatus('ลงทะเบียน PWA ไม่สำเร็จ');
+    });
+  }
+}
+
+function checkReminders(){
+  if(!tasks.length) return;
+  const now=new Date();
+  const nowMinutes=now.getHours()*60+now.getMinutes();
+  tasks.forEach((task)=>{
+    const startMinutes=Math.floor(task.start)*60+Math.round((task.start-Math.floor(task.start))*60);
+    const key=`${task.name}-${startMinutes}`;
+    if(lastReminderKey===key) return;
+    if(nowMinutes===startMinutes){
+      showLocalNotification('ถึงเวลา task', `${task.name} เริ่มเวลา ${toTimeStr(task.start)}`);
+      lastReminderKey=key;
+    }
+  });
+}
+
+function startReminderLoop(){
+  if(reminderTimer) clearInterval(reminderTimer);
+  reminderTimer=setInterval(checkReminders,30000);
+  checkReminders();
+}
+
+
+function pad(n){return String(n).padStart(2,'0')}
+function hToAngle(h12){return(h12/12)*Math.PI*2-Math.PI/2}
+function posToHour12(x,y){
+  const dx=x-cx,dy=y-cy;
+  let a=Math.atan2(dy,dx)+Math.PI/2;
+  if(a<0)a+=Math.PI*2;
+  return Math.floor(a/(Math.PI*2)*12);
+}
+function isOnRing(x,y){
+  const d=Math.sqrt((x-cx)**2+(y-cy)**2);
+  return d>=inner&&d<=r;
+}
+function h12to24(h){return mode==='pm'?h+12:h}
+
+const bgC=document.getElementById('bgCanvas');
+const taskC=document.getElementById('taskCanvas');
+const handC=document.getElementById('handCanvas');
+const bgX=bgC.getContext('2d');
+const taskX=taskC.getContext('2d');
+const handX=handC.getContext('2d');
+
+function drawBg(){
+  bgX.clearRect(0,0,300,300);
+  bgX.beginPath();bgX.arc(cx,cy,r,0,Math.PI*2);
+  bgX.fillStyle='#1a1a2e';bgX.fill();
+  bgX.strokeStyle='#2e2e4e';bgX.lineWidth=1;bgX.stroke();
+  bgX.beginPath();bgX.arc(cx,cy,inner,0,Math.PI*2);
+  bgX.strokeStyle='#2e2e4e';bgX.lineWidth=0.5;bgX.stroke();
+  for(let h=0;h<12;h++){
+    const a=hToAngle(h);
+    const isMajor=h%3===0;
+    bgX.beginPath();
+    bgX.moveTo(cx+Math.cos(a)*(isMajor?r-4:r-2),cy+Math.sin(a)*(isMajor?r-4:r-2));
+    bgX.lineTo(cx+Math.cos(a)*(isMajor?r-16:r-9),cy+Math.sin(a)*(isMajor?r-16:r-9));
+    bgX.strokeStyle=isMajor?'#5a5a7a':'#3a3a5a';bgX.lineWidth=isMajor?1.5:0.7;bgX.stroke();
+    if(true){
+      const v=h12to24(h);
+      bgX.fillStyle='#666680';
+      bgX.font=`${isMajor?11:9}px Sarabun,sans-serif`;
+      bgX.textAlign='center';bgX.textBaseline='middle';
+      const tr=inner+14;
+      bgX.fillText(pad(v)+':00',cx+Math.cos(a)*tr,cy+Math.sin(a)*tr);
+    }
+  }
+  bgX.fillStyle='#3a3a5a';
+  bgX.font='bold 12px Sarabun,sans-serif';
+  bgX.textAlign='center';bgX.textBaseline='middle';
+  bgX.fillText(mode.toUpperCase(),cx,cy);
+}
+
+function drawTasks(){
+  taskX.clearRect(0,0,300,300);
+  tasks.forEach(t=>{
+    const inAM=t.start<12, inPM=t.start>=12;
+    if((mode==='am'&&!inAM)||(mode==='pm'&&!inPM))return;
+    const s12=t.start%12, e12=t.end%12;
+    const a1=hToAngle(s12);
+    const a2=hToAngle(e12<=s12?e12+12:e12);
+    taskX.beginPath();
+    taskX.moveTo(cx+Math.cos(a1)*inner,cy+Math.sin(a1)*inner);
+    taskX.arc(cx,cy,r-1,a1,a2);
+    taskX.arc(cx,cy,inner+1,a2,a1,true);
+    taskX.closePath();
+    taskX.fillStyle=t.color+'bb';taskX.fill();
+    const amid=(a1+a2)/2, tmid=(r+inner)/2;
+    taskX.save();
+    taskX.translate(cx+Math.cos(amid)*tmid,cy+Math.sin(amid)*tmid);
+    taskX.rotate(amid+Math.PI/2);
+    taskX.fillStyle='#fff';
+    taskX.font='500 10px Sarabun,sans-serif';
+    taskX.textAlign='center';taskX.textBaseline='middle';
+    if((a2-a1)*tmid>18){
+      taskX.fillText(t.name.length>8?t.name.slice(0,7)+'…':t.name,0,0);
+    }
+    taskX.restore();
+  });
+}
+
+function drawHand(){
+  handX.clearRect(0,0,300,300);
+  const now=new Date();
+  const h24=now.getHours()+(now.getMinutes()/60);
+  if((mode==='am'&&h24>=12)||(mode==='pm'&&h24<12))return;
+  const a=hToAngle(h24%12);
+  handX.beginPath();handX.moveTo(cx,cy);
+  handX.lineTo(cx+Math.cos(a)*(r-8),cy+Math.sin(a)*(r-8));
+  handX.strokeStyle='#e05c6e';handX.lineWidth=2;handX.stroke();
+  handX.beginPath();handX.arc(cx,cy,4,0,Math.PI*2);
+  handX.fillStyle='#e05c6e';handX.fill();
+}
+
+taskC.addEventListener('mousedown',e=>{
+  const rect=taskC.getBoundingClientRect();
+  const x=(e.clientX-rect.left)*(300/rect.width);
+  const y=(e.clientY-rect.top)*(300/rect.height);
+  if(isOnRing(x,y))dragStart=posToHour12(x,y);
+});
+taskC.addEventListener('mouseup',e=>{
+  if(dragStart===null)return;
+  const rect=taskC.getBoundingClientRect();
+  const x=(e.clientX-rect.left)*(300/rect.width);
+  const y=(e.clientY-rect.top)*(300/rect.height);
+  if(isOnRing(x,y)){
+    const end=posToHour12(x,y);
+    document.getElementById('startH').value=h12to24(dragStart);
+    document.getElementById('endH').value=h12to24(end===dragStart?(dragStart+1)%12:end);
+  }
+  dragStart=null;
+});
+taskC.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  const t=e.touches[0];
+  const rect=taskC.getBoundingClientRect();
+  const x=(t.clientX-rect.left)*(300/rect.width);
+  const y=(t.clientY-rect.top)*(300/rect.height);
+  if(isOnRing(x,y))dragStart=posToHour12(x,y);
+},{passive:false});
+taskC.addEventListener('touchend',e=>{
+  if(dragStart===null)return;
+  const t=e.changedTouches[0];
+  const rect=taskC.getBoundingClientRect();
+  const x=(t.clientX-rect.left)*(300/rect.width);
+  const y=(t.clientY-rect.top)*(300/rect.height);
+  if(isOnRing(x,y)){
+    const end=posToHour12(x,y);
+    document.getElementById('startH').value=h12to24(dragStart);
+    document.getElementById('endH').value=h12to24(end===dragStart?(dragStart+1)%12:end);
+  }
+  dragStart=null;
+});
+
+function buildSelects(){
+  const sh=document.getElementById('startH'),eh=document.getElementById('endH');
+  const off=mode==='pm'?12:0;
+  sh.innerHTML='';eh.innerHTML='';
+  for(let h=0;h<12;h++){
+    for(let m=0;m<60;m+=5){
+      const v=h+off;
+      const label=`${pad(v)}:${pad(m)}`;
+      const val=v+(m/60);
+      sh.innerHTML+=`<option value="${val}">${label}</option>`;
+      eh.innerHTML+=`<option value="${val}">${label}</option>`;
+    }
+  }
+  if(eh.options.length>1)eh.selectedIndex=1;
+}
+
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&m==='am')||(i===1&&m==='pm')));
+  buildSelects();drawBg();drawTasks();drawHand();
+}
+
+function renderList(){
+  const el=document.getElementById('taskList');
+  if(!tasks.length){el.innerHTML='<p class="empty">ยังไม่มี task</p>';return;}
+  el.innerHTML=tasks.map((t,i)=>`
+    <div class="task-item" draggable="true" data-index="${i}"
+      ondragstart="dragStart2(event,${i})"
+      ondragover="event.preventDefault()"
+      ondrop="dragDrop(event,${i})"
+      ontouchstart="touchDragStart(event,${i})"
+      ontouchend="touchDragEnd(event)"
+      ontouchcancel="touchDragCancel(event)"
+      style="cursor:grab">
+      <div class="task-dot" style="background:${t.color}"></div>
+      <div class="task-info">
+        <div class="task-name">${t.name}</div>
+        <div class="task-time">${toTimeStr(t.start)} – ${toTimeStr(t.end)}</div>
+      </div>
+      <button class="task-del" onclick="removeTask(${i})">×</button>
+    </div>`).join('');
+}
+
+let dragIdx=null;
+function dragStart2(e,i){dragIdx=i;}
+function touchDragStart(e,i){
+  if(e.touches.length!==1) return;
+  dragIdx=i;
+}
+function touchDragEnd(e){
+  if(dragIdx===null) return;
+  const t=e.changedTouches[0];
+  const el=document.elementFromPoint(t.clientX,t.clientY);
+  const target=el&&el.closest('.task-item');
+  if(target){
+    const idx=Number(target.dataset.index);
+    if(!Number.isNaN(idx)) moveTask(dragIdx, idx);
+  }
+  dragIdx=null;
+}
+function touchDragCancel(){ dragIdx=null; }
+function dragDrop(e,i){
+  if(dragIdx===null||dragIdx===i)return;
+  moveTask(dragIdx, i);
+  dragIdx=null;
+}
+function moveTask(from,to){
+  if(from===to) return;
+  const tmp=tasks.splice(from,1)[0];
+  tasks.splice(to,0,tmp);
+  save();drawTasks();renderList();
+}
+
+function toTimeStr(v){
+  const h=Math.floor(v);
+  const m=Math.round((v-h)*60);
+  return `${pad(h)}:${pad(m)}`;
+}
+function addTask(){
+  const name=document.getElementById('taskName').value.trim();
+  const start=+document.getElementById('startH').value;
+  const end=+document.getElementById('endH').value;
+  const color=document.getElementById('taskColor').value;
+  if(!name){
+    alert('ยังไม่ได้ใส่ชื่อ task นะ');
+    document.getElementById('taskName').focus();
+    return;
+  }
+  tasks.push({name,start,end,color});
+  save();
+  drawTasks();renderList();
+  document.getElementById('taskName').value='';
+}
+
+let presets=[];
+
+function removeTask(i){tasks.splice(i,1);save();drawTasks();renderList();}
+function save(){try{localStorage.setItem('cplanner',JSON.stringify(tasks));}catch(e){}}
+function load(){
+  try{
+    const d=localStorage.getItem('cplanner');
+    if(d){
+      tasks=JSON.parse(d);
+    }
+  }catch(e){}
+  loadPresets();
+}
+
+function savePreset(){
+  const name=document.getElementById('presetName').value.trim();
+  if(!name){
+    alert('กรุณากรอกชื่อเซฟก่อนบันทึก');
+    document.getElementById('presetName').focus();
+    return;
+  }
+  const preset={name,tasks:JSON.parse(JSON.stringify(tasks))};
+  const existing=presets.findIndex(p=>p.name===name);
+  if(existing>=0){
+    presets[existing]=preset;
+  } else {
+    presets.push(preset);
+  }
+  savePresets();
+  renderPresetOptions();
+  alert('บันทึกเซฟเรียบร้อยแล้ว');
+}
+
+function loadPreset(){
+  const select=document.getElementById('presetSelect');
+  if(!select||select.value===''){
+    alert('กรุณาเลือกเซฟที่ต้องการโหลด');
+    return;
+  }
+  const preset=presets[Number(select.value)];
+  if(!preset) return;
+  tasks=JSON.parse(JSON.stringify(preset.tasks));
+  save();drawTasks();renderList();
+  alert(`โหลดเซฟ "${preset.name}" เรียบร้อยแล้ว`);
+}
+
+function deletePreset(){
+  const select=document.getElementById('presetSelect');
+  if(!select||select.value===''){
+    alert('กรุณาเลือกเซฟก่อนลบ');
+    return;
+  }
+  const index=Number(select.value);
+  const preset=presets[index];
+  if(!preset) return;
+  if(!confirm(`ยืนยันลบเซฟ "${preset.name}" ?`)) return;
+  presets.splice(index,1);
+  savePresets();
+  renderPresetOptions();
+  alert('ลบเซฟเรียบร้อยแล้ว');
+}
+
+function savePresets(){
+  try{localStorage.setItem('cplanner_presets',JSON.stringify(presets));}catch(e){}
+}
+
+function loadPresets(){
+  try{
+    const d=localStorage.getItem('cplanner_presets');
+    presets=d?JSON.parse(d):[];
+  }catch(e){presets=[];}
+  renderPresetOptions();
+}
+
+function renderPresetOptions(){
+  const select=document.getElementById('presetSelect');
+  if(!select) return;
+  if(!presets.length){
+    select.innerHTML='<option value="">ยังไม่มี preset</option>';
+    return;
+  }
+  select.innerHTML=`<option value="">เลือก preset...</option>`+presets.map((p,i)=>`<option value="${i}">${p.name}</option>`).join('');
+}
+
+function updateCurrentDate(){
+  const d=new Date();
+  const dateStr=`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+  const el=document.getElementById('currentDate');
+  if(el) el.textContent=dateStr;
+}
+
+function toggleTheme(){
+  const isLight=document.documentElement.classList.toggle('light');
+  document.getElementById('themeBtn').textContent=isLight?'☀️ สว่าง':'🌙 มืด';
+  try{localStorage.setItem('theme',isLight?'light':'dark');}catch(e){}
+  drawBg();drawTasks();drawHand();
+}
+function toggleHelp(){
+  document.getElementById('helpBox').classList.toggle('show');
+}
+function loadTheme(){
+  try{
+    const t=localStorage.getItem('theme');
+    if(t==='light'){
+      document.documentElement.classList.add('light');
+      document.getElementById('themeBtn').textContent='☀️ สว่าง';
+    }
+  }catch(e){}
+}
+loadTheme();load();buildSelects();drawBg();drawTasks();drawHand();renderList();renderPresetOptions();updateCurrentDate();
+registerServiceWorker();
+if('Notification' in window){
+  if(Notification.permission==='granted') updateReminderStatus('อนุญาตการแจ้งเตือนแล้ว');
+  else if(Notification.permission==='denied') updateReminderStatus('ถูกปิดการแจ้งเตือนแล้ว');
+  else updateReminderStatus('ยังไม่ได้อนุญาตการแจ้งเตือน');
+}
+startReminderLoop();
+setInterval(drawHand,15000);
+</script>
+</body>
+</html>

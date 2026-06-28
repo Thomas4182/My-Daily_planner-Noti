@@ -1,5 +1,5 @@
 const CACHE_NAME = 'clock-planner-v1';
-const ASSETS = ['./', './My%20Daily_planner%20Noti.html', './manifest.json', './iconMiki192.jpeg', './iconMiki512.jpeg'];
+const ASSETS = ['./', './My%20Daily_planner%20Noti.html', './manifest.json', './iconMiki192.png', './iconMiki512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));

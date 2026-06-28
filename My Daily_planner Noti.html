@@ -14,6 +14,8 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="iconMiki180.png">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -147,6 +149,7 @@ input[type=color]{height:36px;padding:2px 3px;width:44px;border:1px solid var(--
   <div class="panel">
     <p class="panel-title">แจ้งเตือนมือถือ</p>
     <div class="add-form">
+      <input type="text" id="vapidKey" placeholder="BEi4_o-wF-my4zpGUg_MWdDizZixZIzoboXl9RA-Uo01Uy9_Z3h3lkl541LoAdc8YY5u_yAsiPiu9_5_SNEAaJ0" />
       <div class="row">
         <button class="btn btn-primary" onclick="requestNotificationPermission()" style="flex:1">อนุญาตการแจ้งเตือน</button>
       </div>
@@ -155,6 +158,9 @@ input[type=color]{height:36px;padding:2px 3px;width:44px;border:1px solid var(--
       </div>
       <div class="row">
         <span id="reminderStatus" style="font-size:12px;color:var(--text2)">กำลังรออนุญาต...</span>
+      </div>
+      <div class="row">
+        <span id="fcmToken" style="font-size:10px;color:var(--text2);word-break:break-all">ยังไม่มี token</span>
       </div>
     </div>
   </div>
@@ -165,25 +171,55 @@ let mode='am', tasks=[], dragStart=null;
 const cx=150,cy=150,r=138,inner=76;
 let reminderTimer = null;
 let lastReminderKey = '';
+let messaging = null;
 
 function updateReminderStatus(message){
   const el=document.getElementById('reminderStatus');
   if(el) el.textContent=message;
 }
 
-function requestNotificationPermission(){
+async function requestNotificationPermission(){
   if(!('Notification' in window)){
     updateReminderStatus('เบราว์เซอร์นี้ไม่รองรับ notification');
     return;
   }
-  Notification.requestPermission().then((permission)=>{
-    if(permission==='granted'){
-      updateReminderStatus('อนุญาตการแจ้งเตือนแล้ว');
-      showLocalNotification('Clock Planner','ระบบแจ้งเตือนพร้อมใช้งานแล้ว');
-    } else {
-      updateReminderStatus('ยังไม่ได้อนุญาตการแจ้งเตือน');
-    }
-  });
+  const vapidKey=document.getElementById('vapidKey').value.trim();
+  if(!vapidKey){
+    updateReminderStatus('กรุณาใส่ VAPID Key ก่อน');
+    return;
+  }
+  const permission=await Notification.requestPermission();
+  if(permission!=='granted'){
+    updateReminderStatus('ยังไม่ได้อนุญาตการแจ้งเตือน');
+    return;
+  }
+  if(!window.firebase || !window.firebase.messaging){
+    updateReminderStatus('Firebase SDK ยังไม่พร้อม');
+    return;
+  }
+  if(!firebase.apps.length){
+    firebase.initializeApp({
+      apiKey: 'AIzaSyAEOSrd_oKGxJCPZLP2J7KzFEl85e9s0jM',
+      authDomain: 'my-daily-clock-planner.firebaseapp.com',
+      projectId: 'my-daily-clock-planner',
+      storageBucket: 'my-daily-clock-planner.firebasestorage.app',
+      messagingSenderId: '268091058772',
+      appId: '1:268091058772:web:898f00a426ec071670dbc1',
+      measurementId: 'G-JT5LGLRR0E'
+    });
+  }
+  messaging=firebase.messaging();
+  try{
+    const token=await messaging.getToken({ vapidKey });
+    const el=document.getElementById('fcmToken');
+    if(el) el.textContent=token || 'ไม่ได้รับ token';
+    try{localStorage.setItem('cplanner_fcm_token',token||'');}catch(e){}
+    updateReminderStatus('รับ FCM token แล้ว');
+    showLocalNotification('My Daily Planner','ระบบแจ้งเตือนพร้อมใช้งานแล้ว');
+  } catch(e){
+    console.error(e);
+    updateReminderStatus('ไม่สามารถรับ FCM token ได้');
+  }
 }
 
 function showLocalNotification(title, body){

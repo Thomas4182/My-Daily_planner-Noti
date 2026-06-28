@@ -13,12 +13,30 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+self.addEventListener('push', function(event) {
+  let payload = {};
+  try {
+    payload = event.data && event.data.json ? event.data.json() : {};
+  } catch (e) {
+    payload = {};
+  }
+  const title = payload.notification?.title || 'My Daily Planner';
+  const body = payload.notification?.body || 'คุณมีการแจ้งเตือนใหม่';
+  const options = {
+    body: body,
+    icon: '/iconMiki192.png',
+    tag: 'clock-planner-reminder'
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
 messaging.onBackgroundMessage(function(payload) {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  const title = payload.notification?.title || 'Clock Planner';
+  const title = payload.notification?.title || 'My Daily Planner';
   const body = payload.notification?.body || 'ถึงเวลาทำ task แล้ว';
   const options = {
     body: body,
+    icon: '/iconMiki192.png',
     tag: 'clock-planner-reminder'
   };
   self.registration.showNotification(title, options);

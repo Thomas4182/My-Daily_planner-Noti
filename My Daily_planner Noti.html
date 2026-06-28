@@ -231,7 +231,7 @@ async function requestNotificationPermission(){
     });
   }
   messaging=firebase.messaging();
-  messaging.useServiceWorker(registration);
+  setupForegroundMessageHandler();
   try{
     const token=await messaging.getToken({ vapidKey, serviceWorkerRegistration: registration });
     const el=document.getElementById('fcmToken');
@@ -250,6 +250,19 @@ function showLocalNotification(title, body){
   try{
     new Notification(title,{body,icon:'./iconMiki192.png'});
   } catch(e){console.error(e);}
+}
+
+function setupForegroundMessageHandler(){
+  if(!messaging) return;
+  try{
+    messaging.onMessage((payload) => {
+      const title = payload?.notification?.title || 'My Daily Planner';
+      const body = payload?.notification?.body || 'คุณมีการแจ้งเตือนใหม่';
+      showLocalNotification(title, body);
+    });
+  } catch(e){
+    console.error(e);
+  }
 }
 
 function testNotification(){

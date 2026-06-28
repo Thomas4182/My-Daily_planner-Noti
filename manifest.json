@@ -1,5 +1,5 @@
 {
-  "name": "Clock Planner",
+  "name": "My Daily Planner",
   "short_name": "ClockPlanner",
   "start_url": "./My%20Daily_planner%20Noti.html",
   "scope": "./",
@@ -10,15 +10,15 @@
   "description": "แอปจัดตารางงานและแจ้งเตือนแบบมือถือ",
   "icons": [
     {
-      "src": "./icon-192.svg",
+      "src": "./iconMiki192.jpeg",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "./icon-512.svg",
+      "src": "./iconMiki512.jpeg",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/jpeg",
       "purpose": "any"
     }
   ]
